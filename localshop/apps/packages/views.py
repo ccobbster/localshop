@@ -1,3 +1,4 @@
+import base64
 import logging
 
 from django.contrib.auth import authenticate
@@ -43,11 +44,12 @@ class SimpleIndex(ListView):
         data, files = parse_distutils_request(request)
 
         # XXX: Auth is currently a bit of a hack
-        method, identity = split_auth(request)
-        if not method:
+        auth = request.META.get('HTTP_AUTHORIZATION')
+        if not auth:
             return HttpResponseUnauthorized('Missing auth header')
+        method, identity = auth.split()
+        username, password = base64.decodestring(identity).split(':')
 
-        username, password = decode_credentials(identity)
         user = authenticate(username=username, password=password)
         if not user:
             return HttpResponse('Invalid username/password', status=401)
